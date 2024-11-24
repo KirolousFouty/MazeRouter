@@ -1,0 +1,11 @@
+1) Simple Net Without Obstacles
+
+2) Net With Obstacles
+
+3) Two Nets With Overlapping Paths
+
+4) Multi-Layer Routing
+
+5) Bend and Via Penalties
+
+6) Handling a Large Grid With Multiple Nets
