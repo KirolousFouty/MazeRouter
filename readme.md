@@ -6,11 +6,19 @@
 - Kirolous Fouty
 - Michael Reda
 
-#### Workplan
+#### Tentative Guiding Workplan
 - **Member 1**: Implement routing algorithm and BFS logic.
 - **Member 2**: Input parsing and output generation.
 - **Member 3**: Develop visualization and refine visual output.
 - **Member 4**: Testing, debugging, and documentation.
+
+#### Workflow history
+- **Kirolous**: skeleton and draft code, but not working properly
+- **Michael & Freddy**: fixed the code and the penalties on M0
+- **Kirolous**: multi grid and heuristic order support
+- **Freddy**: fixed bend calculation, and improved visualization
+- **Andrew**: test cases, inputs, and screenshots
+
 
 ## Overview
 The Maze Router project is designed to optimize routing paths for IC design using a grid-based layout. It supports two-layer routing (M0 and M1) with distinct directional preferences and incorporates penalties for bends and vias. The router reads input files defining grid dimensions, obstacles, and nets and generates output files with optimized routing paths. A visualization script is included to display the results graphically.
@@ -40,7 +48,7 @@ The project is implemented in Python and follows a modular structure:
 3. The output file (output.txt) will be generated in the project directory.
 4. To visualize the results:
     ```bash
-    python maze_router.py visualize
+    python mazerouter.py visualize
 
 ### Challenges
 - Balancing Complexity and Efficiency: Ensuring the algorithm handled multi-layer routing while maintaining acceptable performance.
@@ -51,7 +59,7 @@ The project is implemented in Python and follows a modular structure:
 
 ### Files
 - maze_router.py: Main script containing all functionalities.
-- input.txt: Example input file.
+- input.txt: Input file.
 - output.txt: Generated output file with routed paths.
 - README.md: Documentation and report.
 
