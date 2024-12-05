@@ -88,49 +88,63 @@ class MazeRouter:
                     print(f"No valid pins found for net: {net_name}")
 
 
+
     def route_net(self, net_name, pins):
         visited = set()
         queue = []
+        
+        # Initialize the queue with the starting pin
         heapq.heappush(queue, (0, pins[0][0], pins[0][1], pins[0][2], [], None))
         targets = set(pins[1:])
 
         while queue:
             cost, layer, x, y, path, prev_dir = heapq.heappop(queue)
            #print(f"THis is the value of X: {x}")
-           #print(f"THis is the value of y: {y}")
+        #print(f"THis is the value of y: {y}")
            # print(f"End of movment")
+
+
+            
+            # Skip visited nodes
             if (layer, x, y) in visited:
                 continue
+            
             visited.add((layer, x, y))
             path = path + [(layer, x, y)]
 
+            # Check if all target pins have been reached
             if targets.issubset(path):
                 for l, px, py in path:
                     if l == 0:
                         self.grid_M0[px, py] = -1
                     elif l == 1:
                         self.grid_M1[px, py] = -1
+                # Debugging statement for the net name and the final path cost
                 print(f"Net '{net_name}' routed successfully with final path cost: {cost}")
                 return path
 
+            # Explore neighbors
             for d_layer, dx, dy, penalty in [
-                (0, 0, 1, 2), (0, 0, -1, 2), (0, 1, 0, 1), (0, -1, 0, 1),
+                (0, 0, 1, 1), (0, 0, -1, 1), (0, 1, 0, 2), (0, -1, 0, 2),
                 (1, 0, 0, self.via_penalty)
             ]:
                 nl, nx, ny = layer + d_layer, x + dx, y + dy
 
                 if 0 <= nx < self.rows and 0 <= ny < self.cols and (nl, nx, ny) not in visited:
                     if nl == 0 and self.grid_M0[nx, ny] != -1:
-                       new_dir = (dx, dy) if d_layer == 0 else None
-                       bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
-                       move_cost = self.move_cost + penalty + bend_cost
-                       heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
+                        new_dir = (dx, dy) if d_layer == 0 else None
+                        bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
+                        move_cost = self.move_cost + penalty + bend_cost
+                        heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
+                        #print(f"Evaluating: layer={nl}, x={nx}, y={ny}, cost={move_cost}, penalty={penalty}")
                     elif nl == 1 and self.grid_M1[nx, ny] != -1:
                         new_dir = (dx, dy) if d_layer == 0 else None
                         bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
                         move_cost = self.move_cost + penalty + bend_cost
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
                         #print(f"Evaluating: layer={nl}, x={nx}, y={ny}, cost={move_cost}, penalty={penalty}")
+
+        # If no valid path is found, print debugging info
         print(f"Net '{net_name}' could not be routed.")
         return None
 
@@ -183,7 +197,6 @@ class MazeRouter:
         ax.legend()
         plt.gca().invert_yaxis()
         plt.show()
-
 
 # Example usage:
 router = MazeRouter((100, 200), bend_penalty=5, via_penalty=20, move_cost=0)
