@@ -8,4 +8,5 @@ settings.json
 tasks.json
 *.exe
 *.tmp
+temp.py
 tempCodeRunnerFile.py

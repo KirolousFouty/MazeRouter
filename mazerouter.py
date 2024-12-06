@@ -56,28 +56,19 @@ class MazeRouter:
                 try:
                     # Group coordinates into 3D tuples
                     pin_strings = tokens[1:]  # Collect pin strings
-                    # print(pin_strings)
-
-                    # Initialize an empty list for tuples
                     result = []
-
-                    # Temporary storage for one tuple
                     current_tuple = []
 
-                    # Iterate through the list
                     for item in pin_strings:
-                        # Remove parentheses and commas, then split to extract numbers
                         cleaned_item = item.strip('(),')
-                        if cleaned_item.isdigit():  # Check if the cleaned item is a number
+                        if cleaned_item.isdigit():
                             current_tuple.append(int(cleaned_item))
-                            
-                        # If a tuple reaches 3 elements, append it to the result and reset
                         if len(current_tuple) == 3:
                             result.append(tuple(current_tuple))
                             current_tuple = []
 
-                    pins.append(result[0])
-                    pins.append(result[1])
+                    if len(result) >= 2:
+                        pins.extend(result)
 
                 except ValueError as e:
                     print(f"Skipping malformed pin: {result} ({e})")
@@ -130,19 +121,29 @@ class MazeRouter:
             ]:
                 nl, nx, ny = layer + d_layer, x + dx, y + dy
 
+                # Adjust movement penalties based on the layer
+                if layer == 0:  # Layer 0: Cheaper vertical movement
+                    if (dx == 0 and abs(dy) == 1):  # Vertical
+                        penalty = 1  # Reduced cost for vertical
+                    elif (abs(dx) == 1 and dy == 0):  # Horizontal
+                        penalty = 3  # Increased cost for horizontal
+                elif layer == 1:  # Layer 1: Cheaper horizontal movement
+                    if (abs(dx) == 1 and dy == 0):  # Horizontal
+                        penalty = 1  # Reduced cost for horizontal
+                    elif (dx == 0 and abs(dy) == 1):  # Vertical
+                        penalty = 3  # Increased cost for vertical
+
                 if 0 <= nx < self.rows and 0 <= ny < self.cols and (nl, nx, ny) not in visited:
                     if nl == 0 and self.grid_M0[nx, ny] != -1:
                         new_dir = (dx, dy) if d_layer == 0 else None
                         bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
                         move_cost = self.move_cost + penalty + bend_cost
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
-                        #print(f"Evaluating: layer={nl}, x={nx}, y={ny}, cost={move_cost}, penalty={penalty}")
                     elif nl == 1 and self.grid_M1[nx, ny] != -1:
                         new_dir = (dx, dy) if d_layer == 0 else None
                         bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
                         move_cost = self.move_cost + penalty + bend_cost
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
-                        #print(f"Evaluating: layer={nl}, x={nx}, y={ny}, cost={move_cost}, penalty={penalty}")
 
         # If no valid path is found, print debugging info
         print(f"Net '{net_name}' could not be routed.")
@@ -176,26 +177,47 @@ class MazeRouter:
                 file.write(f'{net_name} {route_str}\n')
 
     def visualize(self, output_routes):
-        fig, ax = plt.subplots(figsize=(10, 10))
+        fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(20, 10))
 
-        # Draw grid
-        ax.set_xlim(0, self.cols)
-        ax.set_ylim(0, self.rows)
-        ax.set_xticks(range(self.cols))
-        ax.set_yticks(range(self.rows))
-        ax.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+        # Draw grid for M0
+        ax0.set_xlim(0, self.cols)
+        ax0.set_ylim(0, self.rows)
+        ax0.set_xticks(range(self.cols))
+        ax0.set_yticks(range(self.rows))
+        ax0.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+        ax0.set_title('Layer M0')
 
-        # Draw obstacles as points
+        # Draw grid for M1
+        ax1.set_xlim(0, self.cols)
+        ax1.set_ylim(0, self.rows)
+        ax1.set_xticks(range(self.cols))
+        ax1.set_yticks(range(self.rows))
+        ax1.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+        ax1.set_title('Layer M1')
+
+        # Draw obstacles as blocks
         for (layer, x, y) in self.obstacles:
-            ax.plot(x , y , marker='o', color='black', markersize=6)
+            if layer == 0:
+                ax0.add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
+            elif layer == 1:
+                ax1.add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
 
-        # Draw routes
+        # Draw routes as blocks
+        colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+        color_index = 0
         for net_name, route in output_routes:
-            xs, ys = zip(*[(x, y) for _, x, y in route])
-            ax.plot(xs, ys, marker='o', label=net_name)
+            color = colors[color_index % len(colors)]
+            for layer, x, y in route:
+                if layer == 0:
+                    ax0.add_patch(plt.Rectangle((x, y), 1, 1, color=color))
+                elif layer == 1:
+                    ax1.add_patch(plt.Rectangle((x, y), 1, 1, color=color))
+            color_index += 1
 
-        ax.legend()
-        plt.gca().invert_yaxis()
+        ax0.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors[:color_index]], 
+                   [net_name for net_name, _ in output_routes], loc='upper right')
+        ax1.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors[:color_index]], 
+                   [net_name for net_name, _ in output_routes], loc='upper right')
         plt.show()
 
 # Example usage:
