@@ -12,12 +12,18 @@
 - **Member 3**: Develop visualization and refine visual output.
 - **Member 4**: Testing, debugging, and documentation.
 
-#### Workflow history
-- **Kirolous**: skeleton and draft code, but not working properly
+#### Workflow history (Intermediate Milestone)
+- **Kirolous**: keleton and draft code, but not working properly
 - **Michael & Freddy**: fixed the code and the penalties on M0
 - **Kirolous**: multi grid and heuristic order support
 - **Freddy**: fixed bend calculation, and improved visualization
 - **Andrew**: test cases, inputs, and screenshots
+
+#### Workflow history (Final Milestone)
+- **Freddy**: multi grid cost, visulization, and correct the logic
+- **Kirolous**: fixed parsing, and multi grid visualization
+- **Michael**: adjusted_logic_of_cost_across_two_layers, and Statements_Printing
+- **Andrew**: test cases, inputs, slides, and screenshots
 
 
 ## Overview
@@ -44,11 +50,9 @@ The project is implemented in Python and follows a modular structure:
 1. Place your input file (e.g., `input.txt`) in the project directory.
 2. Run the script:
    ```bash
-   python maze_router.py
+   python maze_router.py input.txt output.txt
 3. The output file (output.txt) will be generated in the project directory.
-4. To visualize the results:
-    ```bash
-    python mazerouter.py visualize
+
 
 ### Challenges
 - Balancing Complexity and Efficiency: Ensuring the algorithm handled multi-layer routing while maintaining acceptable performance.
@@ -58,7 +62,7 @@ The project is implemented in Python and follows a modular structure:
 
 
 ### Files
-- maze_router.py: Main script containing all functionalities.
+- mazerouter.py: Main script containing all functionalities.
 - input.txt: Input file.
 - output.txt: Generated output file with routed paths.
 - README.md: Documentation and report.
