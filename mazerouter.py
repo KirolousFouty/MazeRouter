@@ -81,15 +81,21 @@ class MazeRouter:
 
 
     def route_net(self, net_name, pins):
+        print(f"\nRouting net '{net_name}' with pins: {pins}")
         visited = set()
         queue = []
         
-        # Initialize the queue with the starting pin
-        heapq.heappush(queue, (0, pins[0][0], pins[0][1], pins[0][2], [], None))
+        # Initialize the queue with the starting pin and consider via at the start
+        start_pin = pins[0]
+        heapq.heappush(queue, (0, start_pin[0], start_pin[1], start_pin[2], [(start_pin[0], start_pin[1], start_pin[2])], None))
+        heapq.heappush(queue, (self.via_penalty, 1 - start_pin[0], start_pin[1], start_pin[2], [(start_pin[0], start_pin[1], start_pin[2])], None))
         targets = set(pins[1:])
 
         while queue:
             cost, layer, x, y, path, prev_dir = heapq.heappop(queue)
+          #  print(f"\nProcessing node: layer={layer}, x={x}, y={y}, cost={cost}")
+           # print(f"Path so far: {path}")
+            #print(f"Targets remaining: {targets}")
            #print(f"THis is the value of X: {x}")
         #print(f"THis is the value of y: {y}")
            # print(f"End of movment")
@@ -98,6 +104,7 @@ class MazeRouter:
             
             # Skip visited nodes
             if (layer, x, y) in visited:
+                #print(f"Node (layer={layer}, x={x}, y={y}) already visited, skipping.")
                 continue
             
             visited.add((layer, x, y))
@@ -105,6 +112,7 @@ class MazeRouter:
 
             # Check if all target pins have been reached
             if targets.issubset(path):
+                #print(f"All targets reached for net '{net_name}'. Final path: {path}")
                 for l, px, py in path:
                     if l == 0:
                         self.grid_M0[px, py] = -1
@@ -120,8 +128,7 @@ class MazeRouter:
                 (1, 0, 0, self.via_penalty)
             ]:
                 nl, nx, ny = layer + d_layer, x + dx, y + dy
-
-                # Adjust movement penalties based on the layer
+                                # Adjust movement penalties based on the layer
                 if layer == 0:  # Layer 0: Cheaper vertical movement
                     if (dx == 0 and abs(dy) == 1):  # Vertical
                         penalty = 1  # Reduced cost for vertical
@@ -133,21 +140,42 @@ class MazeRouter:
                     elif (dx == 0 and abs(dy) == 1):  # Vertical
                         penalty = 3  # Increased cost for vertical
 
+
                 if 0 <= nx < self.rows and 0 <= ny < self.cols and (nl, nx, ny) not in visited:
                     if nl == 0 and self.grid_M0[nx, ny] != -1:
                         new_dir = (dx, dy) if d_layer == 0 else None
-                        bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
-                        move_cost = self.move_cost + penalty + bend_cost
+                        if d_layer == 0:  # Same layer
+                            bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
+                            move_cost = self.move_cost + penalty + bend_cost
+                        else:  # Different layer
+                            move_cost = self.move_cost + self.via_penalty
+                            bend_cost = 0  # No bend cost when changing layers
+                        #print(f"Exploring neighbor: layer={nl}, x={nx}, y={ny}")
+                       # print(f"Penalty={penalty}, Move_cost={move_cost}, Total_cost={cost + move_cost}")
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
                     elif nl == 1 and self.grid_M1[nx, ny] != -1:
                         new_dir = (dx, dy) if d_layer == 0 else None
-                        bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
-                        move_cost = self.move_cost + penalty + bend_cost
+                        if d_layer == 0:  # Same layer
+                            bend_cost = self.bend_penalty if prev_dir and prev_dir != new_dir and prev_dir is not None else 0
+                            move_cost = self.move_cost + penalty + bend_cost
+                        else:  # Different layer
+                            move_cost = self.move_cost + self.via_penalty
+                            bend_cost = 0  # No bend cost when changing layers
+                       ## print(f"Exploring neighbor: layer={nl}, x={nx}, y={ny}")
+                       # print(f"Penalty={penalty}, Bend_cost={bend_cost}, Move_cost={move_cost}, Total_cost={cost + move_cost}")
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
+                   # else:
+                      #  print(f"Skipping invalid layer: {nl}")
+
+                       # print(f"Bend_cost '{bend_cost}' routed successfully with final path cost: {cost}")
+                       # print(f"vis cosdt '{self.via_penalty}' routed successfully with final path cost: {cost}")
+                     #   print(f"cost till now '{penalty}'")
 
         # If no valid path is found, print debugging info
         print(f"Net '{net_name}' could not be routed.")
         return None
+
+
 
     def heuristic_order(self):
         def net_priority(net):
@@ -174,7 +202,7 @@ class MazeRouter:
         with open(output_filename, 'w') as file:
             for net_name, route in output_routes:
                 route_str = ' '.join([f'({l}, {x}, {y})' for l, x, y in route])
-                file.write(f'{net_name} {route_str}\n')
+                file.write(f'{net_name} {route_str} \n')
 
     def visualize(self, output_routes):
         fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(20, 10))
@@ -220,8 +248,18 @@ class MazeRouter:
                    [net_name for net_name, _ in output_routes], loc='upper right')
         plt.show()
 
+
+
 # Example usage:
 router = MazeRouter((100, 200), bend_penalty=5, via_penalty=20, move_cost=0)
+# Adjust the initial queue to consider via at the start point
+for net_name, pins in router.routes:
+    start_pin = pins[0]
+    initial_queue = [
+        (0, start_pin[0], start_pin[1], start_pin[2], [], None),
+        (router.via_penalty, 1 - start_pin[0], start_pin[1], start_pin[2], [], None)  # Consider via at start
+    ]
+    router.routes.append((net_name, initial_queue))
 router.parse_input("input.txt")
 output_routes = router.route_all()
 router.save_output("output.txt", output_routes)
