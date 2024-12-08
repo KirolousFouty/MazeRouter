@@ -1,0 +1,18 @@
+Input:
+5, 5, 10, 50
+OBS(0, 2, 2)
+net1 (0, 1, 1) (0, 3, 3)
+net2 (0, 1, 3) (0, 3, 1)
+
+Output:
+Routing net 'net1' with pins: [(0, 1, 1), (0, 3, 3)]
+Net 'net1' routed with the optimal path [(0, 1, 1), (0, 1, 1), (0, 1, 2), (0, 1, 3), (0, 2, 3), (0, 3, 3)]
+Net 'net1' routed with the length for optimal path 6
+Net 'net1' routed with a total of 0 vias.
+Net 'net1' routed successfully with final path cost: 18
+
+Routing net 'net2' with pins: [(0, 1, 3), (0, 3, 1)]
+Start node (1, 3) is already blocked by a previous net's path.
+The length of the longest route net is: 6 for net 'net1'
+Total number of wires or paths for all nets combined: 6
+Total number of vias for all nets combined: 0

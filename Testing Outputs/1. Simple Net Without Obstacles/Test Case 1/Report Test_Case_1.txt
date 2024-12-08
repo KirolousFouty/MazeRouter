@@ -1,0 +1,13 @@
+Input:
+5, 5, 10, 50
+net1 (0, 0, 0) (0, 4, 4)
+
+Output:
+Routing net 'net1' with pins: [(0, 0, 0), (0, 4, 4)]
+Net 'net1' routed with the optimal path [(0, 0, 0), (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4), (0, 1, 4), (0, 2, 4), (0, 3, 4), (0, 4, 4)]
+Net 'net1' routed with the length for optimal path 10
+Net 'net1' routed with a total of 0 vias.
+Net 'net1' routed successfully with final path cost: 26
+The length of the longest route net is: 10 for net 'net1'
+Total number of wires or paths for all nets combined: 10
+Total number of vias for all nets combined: 0
