@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 import heapq  # Priority queue for optimal routing
 
 class MazeRouter:
@@ -78,51 +79,38 @@ class MazeRouter:
                 else:
                     print(f"No valid pins found for net: {net_name}")
 
-
-
     def route_net(self, net_name, pins):
         print(f"\nRouting net '{net_name}' with pins: {pins}")
         visited = set()
         queue = []
-        
-        # Initialize the queue with the starting pin and consider via at the start
         start_pin = pins[0]
+        # Check if the start position is already blocked by a previous net
+        if self.grid_M0[start_pin[1], start_pin[2]] == -1 or self.grid_M1[start_pin[1], start_pin[2]] == -1:
+            print(f"Start node ({start_pin[1]}, {start_pin[2]}) is already blocked by a previous net's path.")
+            return None  # You can choose to reroute instead of returning None if you want
+
         heapq.heappush(queue, (0, start_pin[0], start_pin[1], start_pin[2], [(start_pin[0], start_pin[1], start_pin[2])], None))
         heapq.heappush(queue, (self.via_penalty, 1 - start_pin[0], start_pin[1], start_pin[2], [(start_pin[0], start_pin[1], start_pin[2])], None))
         targets = set(pins[1:])
 
         while queue:
             cost, layer, x, y, path, prev_dir = heapq.heappop(queue)
-          #  print(f"\nProcessing node: layer={layer}, x={x}, y={y}, cost={cost}")
-           # print(f"Path so far: {path}")
-            #print(f"Targets remaining: {targets}")
-           #print(f"THis is the value of X: {x}")
-        #print(f"THis is the value of y: {y}")
-           # print(f"End of movment")
 
-
-            
-            # Skip visited nodes
             if (layer, x, y) in visited:
-                #print(f"Node (layer={layer}, x={x}, y={y}) already visited, skipping.")
                 continue
             
             visited.add((layer, x, y))
             path = path + [(layer, x, y)]
 
-            # Check if all target pins have been reached
             if targets.issubset(path):
-                #print(f"All targets reached for net '{net_name}'. Final path: {path}")
                 for l, px, py in path:
                     if l == 0:
                         self.grid_M0[px, py] = -1
                     elif l == 1:
                         self.grid_M1[px, py] = -1
-                # Debugging statement for the net name and the final path cost
                 print(f"Net '{net_name}' routed successfully with final path cost: {cost}")
                 return path
 
-            # Explore neighbors
             for d_layer, dx, dy, penalty in [
                 (0, 0, 1, 1), (0, 0, -1, 1), (0, 1, 0, 2), (0, -1, 0, 2),
                 (1, 0, 0, self.via_penalty)
@@ -150,8 +138,6 @@ class MazeRouter:
                         else:  # Different layer
                             move_cost = self.move_cost + self.via_penalty
                             bend_cost = 0  # No bend cost when changing layers
-                        #print(f"Exploring neighbor: layer={nl}, x={nx}, y={ny}")
-                       # print(f"Penalty={penalty}, Move_cost={move_cost}, Total_cost={cost + move_cost}")
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
                     elif nl == 1 and self.grid_M1[nx, ny] != -1:
                         new_dir = (dx, dy) if d_layer == 0 else None
@@ -161,17 +147,8 @@ class MazeRouter:
                         else:  # Different layer
                             move_cost = self.move_cost + self.via_penalty
                             bend_cost = 0  # No bend cost when changing layers
-                       ## print(f"Exploring neighbor: layer={nl}, x={nx}, y={ny}")
-                       # print(f"Penalty={penalty}, Bend_cost={bend_cost}, Move_cost={move_cost}, Total_cost={cost + move_cost}")
                         heapq.heappush(queue, (cost + move_cost, nl, nx, ny, path, new_dir))
-                   # else:
-                      #  print(f"Skipping invalid layer: {nl}")
 
-                       # print(f"Bend_cost '{bend_cost}' routed successfully with final path cost: {cost}")
-                       # print(f"vis cosdt '{self.via_penalty}' routed successfully with final path cost: {cost}")
-                     #   print(f"cost till now '{penalty}'")
-
-        # If no valid path is found, print debugging info
         print(f"Net '{net_name}' could not be routed.")
         return None
 
@@ -203,56 +180,73 @@ class MazeRouter:
             for net_name, route in output_routes:
                 route_str = ' '.join([f'({l}, {x}, {y})' for l, x, y in route])
                 file.write(f'{net_name} {route_str} \n')
-
     def visualize(self, output_routes):
-        fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(20, 10))
+            fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(20, 10))
 
-        # Draw grid for M0
-        ax0.set_xlim(0, self.cols)
-        ax0.set_ylim(0, self.rows)
-        ax0.set_xticks(range(self.cols))
-        ax0.set_yticks(range(self.rows))
-        ax0.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
-        ax0.set_title('Layer M0')
+            # Draw grid for M0
+            ax0.set_xlim(0, self.cols)
+            ax0.set_ylim(0, self.rows)
+            ax0.set_xticks(range(self.cols))
+            ax0.set_yticks(range(self.rows))
+            ax0.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+            ax0.set_title('Layer M0')
 
-        # Draw grid for M1
-        ax1.set_xlim(0, self.cols)
-        ax1.set_ylim(0, self.rows)
-        ax1.set_xticks(range(self.cols))
-        ax1.set_yticks(range(self.rows))
-        ax1.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
-        ax1.set_title('Layer M1')
+            # Draw grid for M1
+            ax1.set_xlim(0, self.cols)
+            ax1.set_ylim(0, self.rows)
+            ax1.set_xticks(range(self.cols))
+            ax1.set_yticks(range(self.rows))
+            ax1.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+            ax1.set_title('Layer M1')
 
-        # Draw obstacles as blocks
-        for (layer, x, y) in self.obstacles:
-            if layer == 0:
-                ax0.add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
-            elif layer == 1:
-                ax1.add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
-
-        # Draw routes as blocks
-        colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
-        color_index = 0
-        for net_name, route in output_routes:
-            color = colors[color_index % len(colors)]
-            for layer, x, y in route:
+            # Draw obstacles as blocks
+            for (layer, x, y) in self.obstacles:
                 if layer == 0:
-                    ax0.add_patch(plt.Rectangle((x, y), 1, 1, color=color))
+                    ax0.add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
                 elif layer == 1:
-                    ax1.add_patch(plt.Rectangle((x, y), 1, 1, color=color))
-            color_index += 1
+                    ax1.add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
 
-        ax0.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors[:color_index]], 
-                   [net_name for net_name, _ in output_routes], loc='upper right')
-        ax1.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors[:color_index]], 
-                   [net_name for net_name, _ in output_routes], loc='upper right')
-        plt.show()
+            # Lighter colors for routes
+            colors = ['#FFCCCC', '#CCFFFF', '#CCFFCC', '#FFCC99', '#D9B3FF', '#F2B3B3', '#FFCCE5', '#D9D9FF', '#B3FFCC', '#C9C9FF']
+            color_index = 0
+            for net_name, route in output_routes:
+                color = colors[color_index % len(colors)]
+                for i in range(len(route)):
+                    layer, x, y = route[i]
+                    if layer == 0:
+                        ax0.add_patch(plt.Rectangle((x, y), 1, 1, color=color))
+                    elif layer == 1:
+                        ax1.add_patch(plt.Rectangle((x, y), 1, 1, color=color))
+                    
+                    # Check for vias (layer transitions)
+                    if i > 0 and route[i][0] != route[i-1][0]:  # If current layer differs from previous layer
+                        via_x, via_y = x, y
+                        ax0.plot(via_x + 0.5, via_y + 0.5, 'o', color='black', markersize=10, label='Via')
+                        ax1.plot(via_x + 0.5, via_y + 0.5, 'o', color='black', markersize=10)
 
+                # Mark start (S) and end (E) points with transparent background
+                start_layer, start_x, start_y = route[0]
+                end_layer, end_x, end_y = route[-1]
+                
+                # Mark the start 'S' and end 'E' points with light green and no frames
+                if start_layer == 0:
+                    ax0.text(start_x + 0.5, start_y + 0.25, 'S', color='green', fontsize=10, fontweight='bold', ha='right', va='top')
+                elif start_layer == 1:
+                    ax1.text(start_x + 0.5, start_y + 0.25, 'S', color='green', fontsize=10, fontweight='bold', ha='right', va='top' )
+                
+                if end_layer == 0:
+                    ax0.text(end_x + 0.5, end_y + 0.25, 'E', color='red', fontsize=10, fontweight='bold', ha='right', va='top')
+                elif end_layer == 1:
+                    ax1.text(end_x + 0.5, end_y + 0.25, 'E', color='red', fontsize=10, fontweight='bold', ha='right', va='top' )
 
+                color_index += 1
 
-# Example usage:
+            ax0.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors[:color_index]], 
+                    [net_name for net_name, _ in output_routes], loc='upper right')
+            ax1.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors[:color_index]], 
+                    [net_name for net_name, _ in output_routes], loc='upper right')
+            plt.show()
 router = MazeRouter((100, 200), bend_penalty=5, via_penalty=20, move_cost=0)
-# Adjust the initial queue to consider via at the start point
 for net_name, pins in router.routes:
     start_pin = pins[0]
     initial_queue = [
@@ -260,7 +254,18 @@ for net_name, pins in router.routes:
         (router.via_penalty, 1 - start_pin[0], start_pin[1], start_pin[2], [], None)  # Consider via at start
     ]
     router.routes.append((net_name, initial_queue))
-router.parse_input("input.txt")
-output_routes = router.route_all()
-router.save_output("output.txt", output_routes)
-router.visualize(output_routes)
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python script.py <input_file> <output_file>")
+        sys.exit(1)
+    
+    input_file = sys.argv[1]  # argv[1] is the input file
+    output_file = sys.argv[2]  # argv[2] is the output file
+    router.parse_input(input_file)
+    output_routes = router.route_all()
+    router.save_output(output_file, output_routes)
+    router.visualize(output_routes)
+
+if __name__ == "__main__":
+    main()
