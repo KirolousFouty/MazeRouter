@@ -83,6 +83,7 @@ class MazeRouter:
         print(f"\nRouting net '{net_name}' with pins: {pins}")
         visited = set()
         queue = []
+        via_count = 0
         start_pin = pins[0]
         # Check if the start position is already blocked by a previous net
         if self.grid_M0[start_pin[1], start_pin[2]] == -1 or self.grid_M1[start_pin[1], start_pin[2]] == -1:
@@ -108,6 +109,15 @@ class MazeRouter:
                         self.grid_M0[px, py] = -1
                     elif l == 1:
                         self.grid_M1[px, py] = -1
+                for l, px, py in path:
+                    if l == 0:
+                        self.grid_M0[px, py] = -1
+                    elif l == 1:
+                        self.grid_M1[px, py] = -1
+                via_count = sum(1 for i in range(1, len(path)) if path[i][0] != path[i-1][0])
+                print(f"Net '{net_name}' routed with the optimal path {path}")
+                print(f"Net '{net_name}' routed with the length for optimal path {len(path)}")
+                print(f"Net '{net_name}' routed with a total of {via_count} vias.")
                 print(f"Net '{net_name}' routed successfully with final path cost: {cost}")
                 return path
 
@@ -152,6 +162,24 @@ class MazeRouter:
         print(f"Net '{net_name}' could not be routed.")
         return None
 
+    def route_all(self):
+        self.heuristic_order()
+        output_routes = []
+        max_length = 0
+        total_vias = 0
+        for net_name, pins in self.routes:
+            route = self.route_net(net_name, pins)
+            if route:
+                output_routes.append((net_name, route))
+                max_length = max(max_length, len(route))
+                total_vias += sum(1 for i in range(1, len(route)) if route[i][0] != route[i-1][0])
+        if output_routes:
+            longest_route_net = max(output_routes, key=lambda x: len(x[1]))
+            print(f"The length of the longest route net is: {len(longest_route_net[1])} for net '{longest_route_net[0]}'")
+        total_wires = sum(len(route) for _, route in output_routes)
+        print(f"Total number of wires or paths for all nets combined: {total_wires}")
+        print(f"Total number of vias for all nets combined: {total_vias}")
+        return output_routes
 
 
     def heuristic_order(self):
@@ -164,14 +192,6 @@ class MazeRouter:
 
         self.routes.sort(key=net_priority)
 
-    def route_all(self):
-        self.heuristic_order()
-        output_routes = []
-        for net_name, pins in self.routes:
-            route = self.route_net(net_name, pins)
-            if route:
-                output_routes.append((net_name, route))
-        return output_routes
 
 
 
